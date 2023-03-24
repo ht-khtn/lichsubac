@@ -3,7 +3,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.image import Image
-from kivy.properties import ObjectProperty, NumericProperty, ReferenceListProperty, StringProperty
+from kivy.properties import ObjectProperty, NumericProperty, ReferenceListProperty, StringProperty, ListProperty
 from kivy.lang import Builder
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
@@ -17,13 +17,14 @@ from kivy.uix.label import Label
 
 Builder.load_string('''
 
+<Stage1>
+    
+    opacity: 0
+
 <TnlsUI>
     stage_area: stage_area
     
     opacity: 0
-    
-    center: self.parent.center
-    size: self.parent.size
         
     Button:
         id: back_btn
@@ -36,16 +37,12 @@ Builder.load_string('''
     
     GridLayout:
         id: stage_area
-        pos: root.x, root.y -70
+        center:root.center
         orientation: "lr-tb"
-        cols: 3
-        size: root.width, root.height - 140
-        Button:
-            opacity: 0
-            disable: 0
-            size: 50,50
-            pos: root.pos
-            text: 'ok'
+        cols: 8
+        size: root.width-50, root.height-200
+        padding: 10
+        spacing: 20
         
 
 <MainInterface>
@@ -105,25 +102,44 @@ Builder.load_string('''
         Rectangle:
             size: root.size
             pos: root.pos
+            
     LoadInterface:
         id: logo
         pos: root.pos
         size: root.size
+        
     MainInterface:
         id: main
-        pos: root.pos
+        pos: root.x-1000,root.y
         size: root.size
+        
     TnlsUI:
         id: tnlsui
-        pos: root.pos
+        pos: root.x-1000,root.y
+        size: root.size
+    
+    Stage1:
+        id: stage1
+        pos: root.x-1000,root.y
         size: root.size
     
 ''')
 
-
-class TnlsUI(Widget):
+class Stage1(Widget):
+    
     pass
 
+
+class TnlsUI(Widget):
+    
+    stage_area = ObjectProperty(None)
+    
+    def create(self):
+        for i in range(30):
+            btn = Button(text = f"{i+1}")
+            btn.bind(on_press = lambda x: self.parent.goto_stage(i))
+            self.stage_area.add_widget(btn)
+    
 
 class LoadInterface(Widget):
     
@@ -141,8 +157,12 @@ class MainGUI(Widget):
     mainui = ObjectProperty(None)
     tnlsui = ObjectProperty(None)
     
+    stage1 = ObjectProperty(None)
+    
+    stage = ReferenceListProperty(stage1)
+    
     anim_duration = 0.5
-    start_anim_duration = 2
+    start_anim_duration = 0.5
     
     fadein = Animation(opacity = 1, duration = anim_duration)
     fadeout = Animation(opacity = 0, duration = anim_duration)
@@ -152,21 +172,30 @@ class MainGUI(Widget):
     def __init__(self, *kwargs):
         super(MainGUI, self).__init__(*kwargs)
         
-        t = time.time()
+        self.tnlsui.create()
         
         fade = Animation(opacity = 2, duration = self.start_anim_duration) + Animation(opacity = 0, duration = self.start_anim_duration)
         fade.start(self.logo)
         fade.bind(on_complete = self.on_complete)
+        self.fadein.bind(on_complete = self.on_complete)
     
     def on_complete(self,animation,widget):
         if widget == self.logo:
             self.showUI(self.mainui)
+        print(widget)
             
     def showUI(self,ui):
         if self.curui:
             self.fadeout.start(self.curui)
+            self.curui.x -= 1000
+        ui.x += 1000
         self.fadein.start(ui)
         self.curui = ui
+    
+    def goto_stage(self,stage):
+        print(stage)
+        self.showUI(self.stage[stage])
+    
 
 class LichSuApp(App):
     
